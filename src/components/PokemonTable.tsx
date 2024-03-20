@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  // Table,
-  // TableBody,
-  // TableCell,
-  // TableContainer,
-  // TableHead,
-  // TableRow,
-  // Paper,
   CircularProgress,
   Box,
   Typography,
@@ -14,7 +7,12 @@ import {
   Modal,
   Backdrop,
 } from '@mui/material';
-import { DataGrid, GridColDef, GridEventListener } from '@mui/x-data-grid';
+import {
+  DataGrid,
+  GridColDef,
+  GridEventListener,
+  GridRowParams,
+} from '@mui/x-data-grid';
 
 interface Pokemon {
   name: string;
@@ -79,7 +77,7 @@ const PokemonTable: React.FC = () => {
       try {
         // Simulating delay
         await new Promise((resolve) =>
-          setTimeout(resolve, Math.random() * 2000),
+          setTimeout(resolve, Math.random() * 3000),
         );
         const response = await fetch(
           'https://pokeapi.co/api/v2/pokemon?limit=100',
@@ -100,7 +98,7 @@ const PokemonTable: React.FC = () => {
     {
       field: 'name',
       headerName: 'Name',
-      width: 150,
+      width: 120,
       editable: true,
     },
   ];
@@ -108,27 +106,21 @@ const PokemonTable: React.FC = () => {
   const rows = getPokemonRows(pokemons);
 
   const handleEvent: GridEventListener<'rowClick'> = (
-    params, // GridRowParams
-    // event, // MuiEvent<React.MouseEvent<HTMLElement>>
-    // details, // GridCallbackDetails
+    params: GridRowParams<PokemonRow>,
   ) => {
-    fetchPokemonDetails(`Movie "${params.row.title}" clicked`);
+    console.log({ params });
+
+    fetchPokemonDetails(+params.id);
   };
 
-  // const sortedPokemons = pokemons.sort((a, b) => {
-  //   const keyA = a[sortBy];
-  //   const keyB = b[sortBy];
-
-  //   if (keyA < keyB) return sortOrder === 'asc' ? -1 : 1;
-  //   if (keyA > keyB) return sortOrder === 'asc' ? 1 : -1;
-  //   return 0;
-  // });
-
-  const fetchPokemonDetails = async (id: string) => {
+  const fetchPokemonDetails = async (id: number) => {
     const url = `https://pokeapi.co/api/v2/pokemon/${id}/`;
     setLoading(true);
 
     try {
+      // Simulating delay
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 3000));
+
       const response = await fetch(url);
       const data = await response.json();
       setSelectedPokemon({
@@ -144,20 +136,28 @@ const PokemonTable: React.FC = () => {
     }
   };
 
-  // const handleRowClick = (url: string) => {
-  //   fetchPokemonDetails(url);
-  //   setIsModalOpen(true);
-  // };
-
   return (
     <div>
-      {loading ? (
-        <CircularProgress />
+      {loading && !pokemons.length ? (
+        <Backdrop
+          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={loading}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
       ) : (
         <>
+          {loading && pokemons?.length && (
+            <Backdrop
+              sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+              open={loading}
+            >
+              <CircularProgress color="inherit" />
+            </Backdrop>
+          )}
           <Box sx={{ width: '100%', maxWidth: 500 }}>
             <Typography variant="h2" gutterBottom>
-              Pokemon table
+              Pokemon Table
             </Typography>
           </Box>
           <DataGrid
@@ -172,31 +172,18 @@ const PokemonTable: React.FC = () => {
             }}
             onRowClick={handleEvent}
             pageSizeOptions={[5]}
-            checkboxSelection
             disableRowSelectionOnClick
+            sx={{
+              // disable cell selection style
+              '.MuiDataGrid-cell:focus': {
+                outline: 'none',
+              },
+              // pointer cursor on ALL rows
+              '& .MuiDataGrid-row:hover': {
+                cursor: 'pointer',
+              },
+            }}
           />
-          {/* <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {pokemons.map((pokemon, index) => (
-                  <TableRow
-                    key={index}
-                    onClick={() => handleRowClick(pokemon.url)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <TableCell>{getIdFromURL(pokemon?.url)}</TableCell>
-                    <TableCell>{capitalizeFirstLetter(pokemon.name)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer> */}
           {selectedPokemon && (
             <Modal
               aria-labelledby="transition-modal-title"
