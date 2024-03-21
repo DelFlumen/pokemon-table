@@ -13,23 +13,8 @@ import {
   GridEventListener,
   GridRowParams,
 } from '@mui/x-data-grid';
-
-interface Pokemon {
-  name: string;
-  url: string;
-}
-
-interface PokemonRow {
-  id: number;
-  name: string;
-}
-
-interface PokemonDetails {
-  id: number;
-  name: string;
-  height: number;
-  weight: number;
-}
+import { PokemonDetails, PokemonRow } from './types';
+import { capitalizeFirstLetter, getPokemonRows } from './utils';
 
 const style = {
   position: 'absolute',
@@ -43,30 +28,9 @@ const style = {
   p: 4,
 };
 
-const capitalizeFirstLetter = (str: string) => {
-  return str[0].toUpperCase() + str.slice(1);
-};
-
-const getIdFromURL = (url: string) => {
-  const matches = Array.from(url.matchAll(/\d+/g));
-  return matches.length > 0 ? +matches[matches.length - 1][0] : null;
-};
-
-const getPokemonRows = (pokemons: Pokemon[]): PokemonRow[] => {
-  return pokemons.reduce((acc: PokemonRow[], curr: Pokemon) => {
-    return [
-      ...acc,
-      {
-        id: getIdFromURL(curr.url) || 0,
-        name: curr.name,
-      },
-    ];
-  }, []);
-};
-
 const PokemonTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [pokemons, setPokemons] = useState<Pokemon[]>([]);
+  const [pokemons, setPokemons] = useState<PokemonRow[]>([]);
   const [selectedPokemon, setSelectedPokemon] = useState<PokemonDetails | null>(
     null,
   );
@@ -83,7 +47,7 @@ const PokemonTable: React.FC = () => {
           'https://pokeapi.co/api/v2/pokemon?limit=100',
         );
         const data = await response.json();
-        setPokemons(data.results);
+        setPokemons(getPokemonRows(data.results));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -103,13 +67,9 @@ const PokemonTable: React.FC = () => {
     },
   ];
 
-  const rows = getPokemonRows(pokemons);
-
   const handleEvent: GridEventListener<'rowClick'> = (
     params: GridRowParams<PokemonRow>,
   ) => {
-    console.log({ params });
-
     fetchPokemonDetails(+params.id);
   };
 
@@ -139,20 +99,18 @@ const PokemonTable: React.FC = () => {
   return (
     <div>
       {loading && !pokemons.length ? (
-        <Backdrop
-          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={loading}
-        >
-          <CircularProgress color="inherit" />
-        </Backdrop>
+        <CircularProgress />
       ) : (
         <>
           {loading && pokemons?.length && (
             <Backdrop
-              sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+              sx={{
+                color: '#fff',
+                backgroundColor: 'rgba(0, 0, 0, 0.05)',
+              }}
               open={loading}
             >
-              <CircularProgress color="inherit" />
+              <CircularProgress />
             </Backdrop>
           )}
           <Box sx={{ width: '100%', maxWidth: 500 }}>
@@ -161,7 +119,7 @@ const PokemonTable: React.FC = () => {
             </Typography>
           </Box>
           <DataGrid
-            rows={rows}
+            rows={pokemons}
             columns={columns}
             initialState={{
               pagination: {
@@ -178,7 +136,7 @@ const PokemonTable: React.FC = () => {
               '.MuiDataGrid-cell:focus': {
                 outline: 'none',
               },
-              // pointer cursor on ALL rows
+              // pointer cursor on entire row
               '& .MuiDataGrid-row:hover': {
                 cursor: 'pointer',
               },
@@ -204,10 +162,15 @@ const PokemonTable: React.FC = () => {
                     id="transition-modal-title"
                     variant="h6"
                     component="h2"
+                    align="center"
                   >
                     Details of {capitalizeFirstLetter(selectedPokemon.name)}
                   </Typography>
-                  <Typography id="transition-modal-description" sx={{ mt: 2 }}>
+                  <Typography
+                    id="transition-modal-description"
+                    mt={2}
+                    align="center"
+                  >
                     <p>ID: {selectedPokemon.id}</p>
                     <p>Height: {selectedPokemon.height}</p>
                     <p>Weight: {selectedPokemon.weight}</p>

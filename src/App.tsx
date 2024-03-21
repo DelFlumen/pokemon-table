@@ -1,5 +1,5 @@
-import PokemonTable from "./components/PokemonTable";
-import "./App.css";
+import PokemonTable from './components/PokemonTable/PokemonTable';
+import './App.css';
 
 function App() {
   return (
